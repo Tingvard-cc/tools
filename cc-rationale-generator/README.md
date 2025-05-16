@@ -1,6 +1,6 @@
-# Intersect CC Rationale Metadata Generator
+# CC Rationale Metadata Generator
 
-A web-based tool for Intersect's Constitutional Committee members to generate CIP-136 compliant JSON metadata for vote rationales via a simple step-by-step process, adhering to the structure used in early examples.
+A web-based tool for Constitutional Committee members to generate CIP-136 compliant JSON metadata for vote rationales via a simple step-by-step process, adhering to the structure used in early examples.
 
 ## Motivation
 
@@ -10,7 +10,7 @@ Manually creating this structured JSON metadata, especially with the specific ne
 
 * **Simplify:** Provide an intuitive step-by-step interface for inputting rationale components.
 * **Ensure Compliance:** Guide users to include all necessary fields according to CIP-136 and the reference JSON structure.
-* **Improve Consistency:** Help Intersect's CC members produce standardized rationale metadata.
+* **Improve Consistency:** Help CC members produce standardized rationale metadata.
 * **Streamline Workflow:** Generate the final JSON file ready for use after verification.
 
 ## Features
