@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COI Registry Tool v1 (GitHub Only Load & Copy)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+        }
+        @media (min-width: 768px) {
+            .container { padding: 2.5rem; }
+        }
+
+        label {
+            display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4a5568;
+        }
+        input[type="text"], input[type="date"], textarea, select {
+            width: 100%; padding: 0.875rem 1rem; border: 1px solid #cbd5e0;
+            border-radius: 0.375rem; margin-bottom: 1.25rem;
+            box-shadow: inset 0 1px 2px 0 rgba(0,0,0,0.03); background-color: white;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        select:required:invalid {
+            color: #a0aec0; 
+        }
+        option[value=""][disabled] {
+            /* display: none; */ 
+        }
+        option {
+            color: #2d3748; 
+        }
+
+        input[type="text"]:focus, input[type="date"]:focus, textarea:focus, select:focus {
+            border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); outline: none;
+        }
+        textarea { min-height: 120px; }
+        button {
+            padding: 0.875rem 1.75rem; border-radius: 0.375rem; font-weight: 600;
+            cursor: pointer; transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            letter-spacing: 0.025em;
+        }
+        button:hover { transform: translateY(-1px); }
+        button:active { transform: translateY(0px); }
+
+        .btn-primary { background-color: #4f46e5; color: white; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
+        .btn-primary:hover { background-color: #4338ca; }
+        .btn-secondary { background-color: #64748b; color: white; box-shadow: 0 2px 4px rgba(100, 116, 139, 0.2); }
+        .btn-secondary:hover { background-color: #475569; }
+        .btn-warning { background-color: #f59e0b; color: white; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2); }
+        .btn-warning:hover { background-color: #d97706; }
+        .btn-danger { background-color: #ef4444; color: white; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2); }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-outline { background-color: transparent; color: #4f46e5; border: 2px solid #4f46e5; padding: calc(0.875rem - 2px) calc(1.75rem - 2px); }
+        .btn-outline:hover { background-color: #eef2ff; }
+        .btn-success { background-color: #10b981; color: white; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); } 
+        .btn-success:hover { background-color: #059669; }
+
+
+        .form-section, .actions-section, .registry-section {
+            margin-bottom: 2.5rem; padding: 2rem; border: 1px solid #e2e8f0;
+            border-radius: 0.5rem; background-color: #f8fafc;
+        }
+        
+        /* Responsive Table Styling */
+        .responsive-table-container {
+            overflow-x: auto; 
+        }
+        .registry-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .registry-table th, .registry-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0; 
+        }
+        .registry-table thead th {
+            background-color: #f8fafc; 
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky; 
+            top: 0;
+            z-index: 10;
+        }
+        .registry-table tbody tr:nth-child(even) {
+            background-color: #fdfdfe; 
+        }
+        .registry-table tbody tr:hover {
+            background-color: #eef2ff; 
+        }
+        .status-pill {
+            display: inline-block; padding: 0.25rem 0.75rem; font-size: 0.75rem;
+            font-weight: 600; border-radius: 9999px; text-align: center;
+        }
+        .table-actions button { 
+            padding: 0.5rem 0.75rem; 
+            font-size: 0.8rem;
+        }
+
+
+        /* Mobile Card View (screens less than 768px) */
+        @media (max-width: 767.98px) {
+            .registry-table thead {
+                display: none; 
+            }
+            .registry-table tr {
+                display: block;
+                margin-bottom: 1.5rem;
+                border: 1px solid #e2e8f0;
+                border-radius: 0.5rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                background-color: #fff; 
+            }
+            .registry-table td {
+                display: block;
+                text-align: right; 
+                padding-left: 50%; 
+                position: relative;
+                border-bottom: 1px dashed #e2e8f0; 
+            }
+            .registry-table td:last-child {
+                border-bottom: none; 
+            }
+            .registry-table td::before {
+                content: attr(data-label); 
+                position: absolute;
+                left: 0.75rem; 
+                width: calc(50% - 1.5rem); 
+                padding-right: 0.5rem;
+                font-weight: 500;
+                text-align: left;
+                color: #4a5568;
+            }
+            .registry-table td.actions-cell { 
+                padding-left: 0.75rem; 
+                text-align: center; 
+            }
+            .registry-table td.actions-cell::before {
+                display: none; 
+            }
+            .table-actions { 
+                display: flex;
+                justify-content: center; 
+                padding-top: 0.5rem;
+            }
+            .table-actions button {
+                 width: auto; 
+                 min-width: 100px; 
+            }
+        }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background-color: #10b981; color: white; padding: 1rem 1.5rem;
+            border-radius: 0.375rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000; opacity: 0; transition: opacity 0.5s ease-in-out;
+            min-width: 250px; text-align: center;
+            max-width: 90%; 
+            word-wrap: break-word; 
+        }
+        .toast.show { opacity: 1; }
+        .toast.error { background-color: #ef4444; }
+        .loading-indicator {
+            display: none; text-align: center; padding: 1rem;
+            font-style: italic; color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">Conflict of Interest Registry</h1>
+            <p class="text-lg text-gray-600 mt-2">Manage Tingvard's Conflict of Interest declarations.</p>
+        </header>
+
+        <div class="actions-section">
+            <h2 class="text-2xl font-semibold mb-6 text-gray-700">File Operations</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center"> 
+                <div class="md:col-span-1">
+                    <button id="reloadGithubButton" class="btn-secondary w-full">Reload from GitHub</button>
+                </div>
+                <div class="md:col-span-1">
+                    <button id="downloadJsonButton" class="btn-primary w-full">Download Updated JSON</button>
+                </div>
+                <div class="md:col-span-1">
+                     <button id="copyJsonButton" class="btn-success w-full">Copy JSON to Clipboard</button> 
+                </div>
+            </div>
+             <p class="mt-4 text-xs text-gray-500 text-center">Load data from GitHub, then save or copy changes to update the `Registry.json` file on GitHub manually.</p>
+        </div>
+
+        <div class="form-section">
+            <h2 id="formTitle" class="text-2xl font-semibold mb-6 text-gray-700">Add New Conflict of Interest Entry</h2>
+            <form id="coiForm" class="space-y-6">
+                <input type="hidden" id="editingEntryId"> 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <div>
+                        <label for="dateDeclared">Date Declared:</label>
+                        <input type="date" id="dateDeclared" required>
+                    </div>
+                    <div>
+                        <label for="member">Member:</label>
+                        <select id="member" required>
+                            <option value="" disabled selected>Select Member</option>
+                            <option value="Thomas">Thomas</option>
+                            <option value="Trym">Trym</option>
+                            <option value="Bjarne">Bjarne</option>
+                            <option value="Arne">Arne</option>
+                            <option value="Ken-Erik">Ken-Erik</option>
+                            <option value="Eystein">Eystein</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="description">Description of Conflict:</label>
+                    <textarea id="description" placeholder="Detailed description of the potential conflict" required></textarea>
+                </div>
+                <div>
+                    <label for="relatedEntity">Related Entity/Interest:</label>
+                    <input type="text" id="relatedEntity" placeholder="e.g., Company X, Project Y" required>
+                </div>
+                <div>
+                    <label for="mitigationMeasures">Mitigation Measures:</label>
+                    <textarea id="mitigationMeasures" placeholder="Steps taken or proposed to mitigate the conflict" required></textarea>
+                </div>
+                <div>
+                    <label for="status">Status:</label>
+                    <select id="status">
+                        <option value="Active">Active</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Recused">Recused</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-4 pt-2">
+                    <button type="submit" id="submitFormButton" class="btn-primary">Add Entry</button>
+                    <button type="button" id="clearFormButton" class="btn-outline">Clear Form</button>
+                    <button type="button" id="cancelEditButton" class="btn-secondary hidden">Cancel Edit</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="registry-section bg-white"> 
+            <h2 class="text-2xl font-semibold mb-6 text-gray-700">Current Registry Entries</h2>
+            <div id="loadingIndicator" class="loading-indicator">Loading data from GitHub...</div>
+            
+            <div class="responsive-table-container">
+                <table class="registry-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Member</th>
+                            <th>Description</th>
+                            <th>Entity</th>
+                            <th>Mitigation</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registryTableBody">
+                        </tbody>
+                </table>
+            </div>
+            <p id="noEntriesMessage" class="mt-6 text-gray-500 text-center py-4">No entries loaded or added yet.</p>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        let registryData = [];
+        const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/Thomas-nada/Test/main/Registry.json';
+
+        // DOM Elements
+        const downloadJsonButton = document.getElementById('downloadJsonButton');
+        const copyJsonButton = document.getElementById('copyJsonButton'); 
+        const reloadGithubButton = document.getElementById('reloadGithubButton');
+        const coiForm = document.getElementById('coiForm');
+        const formTitle = document.getElementById('formTitle');
+        const submitFormButton = document.getElementById('submitFormButton');
+        const clearFormButton = document.getElementById('clearFormButton');
+        const cancelEditButton = document.getElementById('cancelEditButton');
+        const editingEntryIdInput = document.getElementById('editingEntryId');
+        const registryTableBody = document.getElementById('registryTableBody');
+        const noEntriesMessage = document.getElementById('noEntriesMessage');
+        const toastNotification = document.getElementById('toastNotification');
+        const toastMessage = document.getElementById('toastMessage');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // --- Utility Functions ---
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+        }
+
+        function showToast(message, type = 'success', duration = 3000) {
+            toastMessage.textContent = message;
+            toastNotification.className = 'toast show ' + (type === 'error' ? 'error' : '');
+            setTimeout(() => {
+                toastNotification.className = 'toast';
+            }, duration);
+        }
+        
+        function getStatusPillClasses(status) {
+            switch (status) {
+                case 'Active': return 'bg-green-100 text-green-700';
+                case 'Resolved': return 'bg-blue-100 text-blue-700';
+                case 'Under Review': return 'bg-yellow-100 text-yellow-700';
+                case 'Recused': return 'bg-gray-200 text-gray-700'; 
+                default: return 'bg-gray-100 text-gray-600';
+            }
+        }
+
+        // --- Core Logic: Rendering ---
+        function renderRegistry() {
+            registryTableBody.innerHTML = ''; 
+
+            if (registryData.length === 0) {
+                noEntriesMessage.style.display = 'block';
+                if (window.innerWidth >= 768) {
+                     registryTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-gray-400 italic">No entries to display.</td></tr>';
+                }
+                return;
+            }
+            noEntriesMessage.style.display = 'none';
+
+            registryData.forEach(entry => {
+                if (!entry.id) entry.id = generateId(); 
+
+                const row = registryTableBody.insertRow();
+                row.setAttribute('data-entry-id', entry.id); 
+
+                const createCell = (dataLabel, content, className = '') => {
+                    const cell = row.insertCell();
+                    cell.setAttribute('data-label', dataLabel);
+                    cell.className = className;
+                    cell.innerHTML = content;
+                    return cell;
+                };
+                
+                createCell('ID', `<span title="${entry.id}">${entry.id.substring(0, 8)}...</span>`);
+                createCell('Date', entry.dateDeclared || '');
+                createCell('Member', entry.member || entry.memberName || ''); 
+                createCell('Description', (entry.description || '').substring(0, 150) + ((entry.description || '').length > 150 ? '...' : ''));
+                createCell('Entity', (entry.relatedEntity || '').substring(0, 70) + ((entry.relatedEntity || '').length > 70 ? '...' : ''));
+                createCell('Mitigation', (entry.mitigationMeasures || '').substring(0, 150) + ((entry.mitigationMeasures || '').length > 150 ? '...' : ''));
+                createCell('Status', `<span class="status-pill ${getStatusPillClasses(entry.status)}">${entry.status || ''}</span>`, 'text-center'); 
+                
+                const actionsCell = createCell('Actions', '', 'actions-cell'); 
+                actionsCell.innerHTML = `
+                    <div class="table-actions">
+                        <button class="btn-warning" onclick="populateFormForEdit('${entry.id}')">Edit</button>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Core Logic: Data Fetching & Loading ---
+        async function fetchJsonFromGitHub() {
+            loadingIndicator.style.display = 'block';
+            noEntriesMessage.style.display = 'none';
+            if (window.innerWidth >= 768) { 
+                registryTableBody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-gray-400 italic">Fetching data...</td></tr>';
+            } else {
+                registryTableBody.innerHTML = ''; 
+            }
+
+            try {
+                const response = await fetch(`${GITHUB_RAW_URL}?cachebust=${new Date().getTime()}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                         showToast('Registry file not found or empty. Starting fresh.', 'success', 4000);
+                         registryData = []; 
+                    } else { throw new Error(`GitHub fetch error: ${response.status}`); }
+                } else {
+                    const textContent = await response.text();
+                    if (textContent.trim() === "") {
+                        showToast('Registry file is empty. Starting fresh.', 'success', 4000);
+                        registryData = [];
+                    } else {
+                        const parsedData = JSON.parse(textContent);
+                        if (Array.isArray(parsedData)) {
+                            registryData = parsedData.map(entry => ({ ...entry, id: entry.id || generateId() }));
+                            showToast('Data loaded from GitHub!', 'success');
+                        } else {
+                            showToast('Invalid JSON from GitHub. Expected an array.', 'error', 5000);
+                            registryData = []; 
+                        }
+                    }
+                }
+            } catch (error) {
+                showToast(`Error fetching data: ${error.message}.`, 'error', 7000); 
+                console.error("Error fetching from GitHub:", error);
+                registryData = []; 
+            } finally {
+                loadingIndicator.style.display = 'none';
+                renderRegistry();
+                resetFormAndSwitchToAddMode();
+            }
+        }
+
+        // --- Core Logic: Form Handling & CRUD ---
+        function populateFormForEdit(entryId) {
+            const entryToEdit = registryData.find(entry => entry.id === entryId);
+            if (!entryToEdit) {
+                showToast('Cannot find entry to edit.', 'error');
+                return;
+            }
+            coiForm.elements.dateDeclared.value = entryToEdit.dateDeclared;
+            coiForm.elements.member.value = entryToEdit.member || entryToEdit.memberName || ''; 
+            coiForm.elements.description.value = entryToEdit.description;
+            coiForm.elements.relatedEntity.value = entryToEdit.relatedEntity;
+            coiForm.elements.mitigationMeasures.value = entryToEdit.mitigationMeasures;
+            coiForm.elements.status.value = entryToEdit.status;
+            
+            editingEntryIdInput.value = entryId; 
+
+            formTitle.textContent = 'Edit Conflict of Interest Entry';
+            submitFormButton.textContent = 'Update Entry';
+            submitFormButton.classList.replace('btn-primary', 'btn-warning');
+            
+            cancelEditButton.classList.remove('hidden');
+            clearFormButton.classList.add('hidden');
+            
+            coiForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function resetFormAndSwitchToAddMode() {
+            coiForm.reset();
+            coiForm.elements.dateDeclared.valueAsDate = new Date(); 
+            coiForm.elements.member.value = ""; 
+            editingEntryIdInput.value = ''; 
+
+            formTitle.textContent = 'Add New Conflict of Interest Entry';
+            submitFormButton.textContent = 'Add Entry';
+            submitFormButton.classList.replace('btn-warning', 'btn-primary'); 
+
+            cancelEditButton.classList.add('hidden');
+            clearFormButton.classList.remove('hidden'); 
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault(); 
+            const currentlyEditingId = editingEntryIdInput.value;
+
+            if (coiForm.elements.member.value === "") {
+                showToast("Please select a member.", "error");
+                coiForm.elements.member.focus();
+                return;
+            }
+
+            const entryData = {
+                dateDeclared: coiForm.elements.dateDeclared.value,
+                member: coiForm.elements.member.value,
+                description: coiForm.elements.description.value,
+                relatedEntity: coiForm.elements.relatedEntity.value,
+                mitigationMeasures: coiForm.elements.mitigationMeasures.value,
+                status: coiForm.elements.status.value,
+            };
+
+            if (currentlyEditingId) {
+                const entryIndex = registryData.findIndex(entry => entry.id === currentlyEditingId);
+                if (entryIndex > -1) {
+                    registryData[entryIndex] = { ...registryData[entryIndex], ...entryData }; 
+                    showToast('Entry updated successfully!', 'success');
+                } else { 
+                    showToast('Error: Could not find entry to update.', 'error');
+                }
+            } else {
+                entryData.id = generateId(); 
+                registryData.push(entryData);
+                showToast('New entry added successfully!', 'success');
+            }
+            renderRegistry(); 
+            resetFormAndSwitchToAddMode(); 
+        }
+        
+        function prepareJsonForOutput() {
+            const desiredKeyOrder = [
+                "id", "dateDeclared", "member", "description", 
+                "relatedEntity", "mitigationMeasures", "status"
+            ];
+            const dataToSave = registryData.map(entry => {
+                let processedEntry = { ...entry }; 
+                if (processedEntry.memberName && !processedEntry.member) {
+                    processedEntry.member = processedEntry.memberName;
+                }
+                delete processedEntry.memberName; 
+                const orderedEntry = {};
+                for (const key of desiredKeyOrder) {
+                    if (processedEntry.hasOwnProperty(key)) {
+                        orderedEntry[key] = processedEntry[key];
+                    }
+                }
+                for (const key in processedEntry) {
+                    if (!orderedEntry.hasOwnProperty(key)) {
+                        orderedEntry[key] = processedEntry[key];
+                    }
+                }
+                return orderedEntry;
+            });
+            return JSON.stringify(dataToSave, null, 2);
+        }
+
+        function downloadJson() {
+            if (registryData.length === 0) {
+                showToast('No data to download.', 'error');
+                return;
+            }
+            const jsonDataString = prepareJsonForOutput();
+            const blob = new Blob([jsonDataString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'Registry_updated.json'; 
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url); 
+            showToast('JSON file download initiated. Remember to upload it to GitHub.', 'success', 5000);
+        }
+
+        async function copyJsonToClipboard() {
+            if (registryData.length === 0) {
+                showToast('No data to copy.', 'error');
+                return;
+            }
+            const jsonDataString = prepareJsonForOutput();
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(jsonDataString);
+                    showToast('JSON copied to clipboard! (Modern API)', 'success');
+                    return; 
+                } catch (err) {
+                    console.warn('Modern clipboard API failed, trying fallback:', err);
+                }
+            }
+            
+            const textArea = document.createElement("textarea");
+            textArea.value = jsonDataString;
+            textArea.style.position = "fixed";
+            textArea.style.top = "-9999px";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('JSON copied to clipboard! (Fallback)', 'success');
+                } else {
+                    showToast('Fallback copy failed. Please copy manually.', 'error', 5000);
+                }
+            } catch (err) {
+                console.error('Fallback clipboard copy failed:', err);
+                showToast('Error during fallback copy. Please copy manually.', 'error', 5000);
+            }
+            document.body.removeChild(textArea);
+        }
+        
+        // --- Event Listeners ---
+        coiForm.addEventListener('submit', handleFormSubmit); 
+        downloadJsonButton.addEventListener('click', downloadJson);
+        copyJsonButton.addEventListener('click', copyJsonToClipboard); 
+        clearFormButton.addEventListener('click', resetFormAndSwitchToAddMode); 
+        cancelEditButton.addEventListener('click', resetFormAndSwitchToAddMode);
+        reloadGithubButton.addEventListener('click', fetchJsonFromGitHub);
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            resetFormAndSwitchToAddMode(); 
+            fetchJsonFromGitHub(); 
+        });
+    </script>
+</body>
+</html>
