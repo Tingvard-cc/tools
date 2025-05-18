@@ -1,8 +1,7 @@
-# Conflict of Interest (COI) Registry Tool - Version 1
+# Conflict of Interest (COI) Registry Tool - Version 0.1
 
 This tool is a simple, client-side HTML application designed to help manage a Conflict of Interest Registry for Tingvard, a member of the Cardano Constitutional Committee. It allows for adding, viewing, and editing entries, which are stored in a `Registry.json` file hosted on GitHub.
 
-**Current Version:** v1
 
 ## Features
 
