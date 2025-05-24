@@ -344,16 +344,7 @@
             gap: 10px;
             flex-wrap: wrap;
         }
-        #step-6 .navigation-buttons {
-            justify-content: space-between;
-        }
-        #step-6 .navigation-buttons > button#verify-button {
-            margin-left: auto; /* Pushes verify to the right, subsequent buttons flow after it */
-        }
-        #step-6 .navigation-buttons > button#generate-button,
-        #step-6 .navigation-buttons > button#generate-markdown-button {
-             margin-left: 10px; /* Space between verify and generate buttons */
-        }
+        /* Removed specific Step 6 layout overrides to rely on the general .navigation-buttons flex properties */
 
 
         /* General style for all navigation buttons, defaults to "Next" button style */
@@ -1348,101 +1339,59 @@
         // New function to generate Markdown content
         function generateMarkdownContent(metadata) {
             let md = "";
-
-            // Helper to safely get values, defaulting to "Not provided" or empty for lists
             const getVal = (path, defaultValue = "Not provided") => {
                 let current = metadata;
-                for (const key of path.split('.')) {
-                    if (current && typeof current === 'object' && key in current) {
-                        current = current[key];
-                    } else {
-                        return defaultValue;
-                    }
-                }
+                for (const key of path.split('.')) { if (current && typeof current === 'object' && key in current) { current = current[key]; } else { return defaultValue; }}
                 return (current === null || current === undefined || current === "") ? defaultValue : current;
             };
-            const getValEmpty = (path) => getVal(path, ""); // For fields that should be empty if not present
-
             md += `# Summary\n\n${getVal('body.summary', 'No summary provided.')}\n\n`;
             md += `# Rationale Statement\n\n${getVal('body.rationaleStatement', 'No rationale statement provided.')}\n\n`;
             md += `# Precedent Discussion\n\n${getVal('body.precedentDiscussion', 'No precedent discussion provided.')}\n\n`;
             md += `# Counterargument Discussion\n\n${getVal('body.counterargumentDiscussion', 'No counterargument discussion provided.')}\n\n`;
             md += `# Conclusion\n\n${getVal('body.conclusion', 'No conclusion provided.')}\n\n`;
-
             md += `# Internal Vote\n\n`;
             md += `- Constitutional: ${getVal('body.internalVote.constitutional', 'N/A')}\n`;
             md += `- Unconstitutional: ${getVal('body.internalVote.unconstitutional', 'N/A')}\n`;
             md += `- Abstain: ${getVal('body.internalVote.abstain', 'N/A')}\n`;
             md += `- Did Not Vote: ${getVal('body.internalVote.didNotVote', 'N/A')}\n\n`;
-
             md += `# References\n\n`;
             const references = (metadata.body && Array.isArray(metadata.body.references)) ? metadata.body.references : [];
             if (references.length > 0) {
                 references.forEach(ref => {
-                    const label = ref.label || 'No Label';
-                    const uri = ref.uri || '#';
-                    md += `- [${label}](${uri})\n`;
-                     // Add RelevantArticles if present (as per CIP-136 context, though your shell script didn't explicitly show this sub-formatting)
-                    if (ref.RelevantArticles) {
-                        md += `  - Relevant Articles/Sections: ${ref.RelevantArticles}\n`;
-                    }
+                    const label = ref.label || 'No Label'; const uri = ref.uri || '#'; md += `- [${label}](${uri})\n`;
+                    if (ref.RelevantArticles) { md += `  - Relevant Articles/Sections: ${ref.RelevantArticles}\n`; }
                 });
-            } else {
-                md += "No references provided.\n";
-            }
+            } else { md += "No references provided.\n"; }
             md += "\n";
-
             md += `# Authors\n\n`;
             const authors = (metadata.authors && Array.isArray(metadata.authors)) ? metadata.authors : [];
-            if (authors.length > 0) {
-                authors.forEach(author => {
-                    // The shell script used .did, but current JSON only has .name
-                    md += `- ${author.name || 'Unnamed Author'}\n`;
-                });
-            } else {
-                md += "No authors listed.\n";
-            }
+            if (authors.length > 0) { authors.forEach(author => { md += `- ${author.name || 'Unnamed Author'}\n`; });
+            } else { md += "No authors listed.\n"; }
             return md.trim();
         }
 
-        // New function to trigger Markdown file download
         function generateMarkdownFile() {
-            const errorMessageDiv = document.getElementById('error-message');
-            if (errorMessageDiv) { errorMessageDiv.textContent = ''; errorMessageDiv.style.display = 'none'; }
-
+            const errMsgDiv = document.getElementById('error-message');
+            if (errMsgDiv) { errMsgDiv.textContent = ''; errMsgDiv.style.display = 'none'; }
             const genMdBtn = document.getElementById('generate-markdown-button');
-            if (genMdBtn && genMdBtn.disabled) {
-                if (errorMessageDiv) { errorMessageDiv.textContent = 'Please verify the metadata successfully before generating.'; errorMessageDiv.style.display = 'block'; }
-                return;
-            }
-
+            if (genMdBtn && genMdBtn.disabled) { if (errMsgDiv) { errMsgDiv.textContent = 'Please verify the metadata successfully before generating.'; errMsgDiv.style.display = 'block'; } return; }
             try {
                 const metadataObject = buildMetadata();
                 const markdownString = generateMarkdownContent(metadataObject);
                 const blob = new Blob([markdownString], { type: 'text/markdown;charset=utf-8' });
                 const link = document.createElement('a');
-
-                const today = new Date();
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const day = String(today.getDate()).padStart(2, '0');
+                const today = new Date(); const year = today.getFullYear(); const month = String(today.getMonth() + 1).padStart(2, '0'); const day = String(today.getDate()).padStart(2, '0');
                 const formattedDate = `${year}-${month}-${day}`;
                 const subjectText = formData.subject ? formData.subject.trim() : "Untitled";
                 const safeSubject = subjectText.replace(/[<>:"/\\|?*]+/g, '_');
-
                 link.download = `${formattedDate} - ${safeSubject}.md`;
                 link.href = URL.createObjectURL(blob);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-
+                document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(link.href);
             } catch (error) {
                 console.error("Error generating Markdown:", error);
-                if (errorMessageDiv) { errorMessageDiv.textContent = `Error generating Markdown: ${error.message}`; errorMessageDiv.style.display = 'block'; }
+                if (errMsgDiv) { errMsgDiv.textContent = `Error generating Markdown: ${error.message}`; errMsgDiv.style.display = 'block'; }
             }
         }
-
     </script>
 </body>
 </html>
