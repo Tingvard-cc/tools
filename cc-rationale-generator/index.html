@@ -37,6 +37,8 @@
             --verify-btn-hover-bg-color: #e0a800;
             --generate-btn-bg-color: #28a745;
             --generate-btn-hover-bg-color: #218838;
+            --generate-md-btn-bg-color: #1e88e5; /* A distinct blue for MD button */
+            --generate-md-btn-hover-bg-color: #1565c0;
             --disabled-btn-bg-color: #adb5bd;
             --disabled-btn-text-color: #888; /* Disabled text color */
             --error-text-color: #721c24;
@@ -101,6 +103,8 @@
             --verify-btn-hover-bg-color: #eab308;
             --generate-btn-bg-color: #22c55e;
             --generate-btn-hover-bg-color: #16a34a;
+            --generate-md-btn-bg-color: #42a5f5; /* Lighter blue for MD button in dark mode */
+            --generate-md-btn-hover-bg-color: #1e88e5;
             --disabled-btn-bg-color: #4b5563;
             --disabled-btn-text-color: #777; /* Disabled text color for dark mode */
             --error-text-color: #fca5a5;
@@ -344,11 +348,13 @@
             justify-content: space-between;
         }
         #step-6 .navigation-buttons > button#verify-button {
-            margin-left: auto;
+            margin-left: auto; /* Pushes verify to the right, subsequent buttons flow after it */
         }
-        #step-6 .navigation-buttons > button#generate-button {
-             margin-left: 10px;
+        #step-6 .navigation-buttons > button#generate-button,
+        #step-6 .navigation-buttons > button#generate-markdown-button {
+             margin-left: 10px; /* Space between verify and generate buttons */
         }
+
 
         /* General style for all navigation buttons, defaults to "Next" button style */
         .navigation-buttons button {
@@ -363,14 +369,12 @@
             transition: background-color 0.3s ease, transform 0.1s ease, opacity 0.3s ease;
         }
         .navigation-buttons button:hover:not(:disabled) {
-            /* Default hover for "Next" or other buttons not specifically styled below for hover */
             background-color: var(--nav-btn-hover-bg-color);
         }
         .navigation-buttons button:active:not(:disabled) {
             transform: scale(0.98);
         }
 
-        /* Previous button style - Overrides general button style */
         .navigation-buttons button:first-child:not(:only-child) {
              background-color: var(--prev-btn-bg-color);
         }
@@ -378,8 +382,7 @@
             background-color: var(--prev-btn-hover-bg-color);
         }
 
-        /* Verify button style - Overrides general button style */
-        #verify-button { /* ID provides high specificity */
+        #verify-button {
             background-color: var(--verify-btn-bg-color);
             color: var(--verify-btn-text-color);
         }
@@ -387,8 +390,7 @@
             background-color: var(--verify-btn-hover-bg-color);
         }
 
-        /* Generate button style - Overrides general button style */
-        #generate-button { /* ID provides high specificity */
+        #generate-button {
              background-color: var(--generate-btn-bg-color);
              color: white;
         }
@@ -396,14 +398,21 @@
             background-color: var(--generate-btn-hover-bg-color);
         }
 
-        /* Disabled button style - Overrides all others when disabled */
+        #generate-markdown-button {
+            background-color: var(--generate-md-btn-bg-color);
+            color: white;
+        }
+        #generate-markdown-button:hover:not(:disabled) {
+            background-color: var(--generate-md-btn-hover-bg-color);
+        }
+
         .navigation-buttons button:disabled {
             background-color: var(--disabled-btn-bg-color);
             color: var(--disabled-btn-text-color);
             cursor: not-allowed;
             opacity: 0.65;
         }
-        /* End of Navigation Button Style Changes */
+
 
         .error, #error-message, .manual-ref-message.error {
             color: var(--error-text-color);
@@ -875,6 +884,7 @@
                 <button type="button" onclick="nextStep()">Next</button>
             </div>
         </div>
+
         <div class="step" id="step-6" style="display: none;">
              <h2>Step 6: Review and Generate</h2>
             <p>Please review the information below. Go back to previous steps to make changes if necessary. Click "Verify Metadata" to check for required fields before generating the file.</p>
@@ -885,6 +895,7 @@
                 <button type="button" onclick="prevStep()">Previous</button>
                 <button type="button" id="verify-button" onclick="verifyMetadata()">Verify Metadata</button>
                 <button type="button" id="generate-button" onclick="generateJson()" disabled>Generate JSON File</button>
+                <button type="button" id="generate-markdown-button" onclick="generateMarkdownFile()" disabled>Generate Markdown File</button>
             </div>
             <div id="error-message" class="error" style="display: none;"></div>
         </div>
@@ -896,28 +907,22 @@
         let currentStep = 1;
         // Object to store input data collected from all steps
         const formData = {};
-        formData.manualRelevantArticles = []; // Array to store relevant articles references { label, uri, selectedArticles? }
-        formData.manualOtherReferences = []; // Array to store other references { label, uri }
-        // Total number of steps in the form
-        const totalSteps = 6; // Remains 6 steps (incl. review)
-        // Object to track the validation status of each step
+        formData.manualRelevantArticles = [];
+        formData.manualOtherReferences = [];
+        const totalSteps = 6;
         const stepValidity = {};
 
-        // --- Reference Library Definition ---
         const referenceLibrary = [
-            { label: "Cardano Blockchain Ecosystem Constitution", uri: "ipfs://bafkreiazhhawe7sjwuthcfgl3mmv2swec7sukvclu3oli7qdyz4uhhuvmy", isConstitution: true }, // Added flag
+            { label: "Cardano Blockchain Ecosystem Constitution", uri: "ipfs://bafkreiazhhawe7sjwuthcfgl3mmv2swec7sukvclu3oli7qdyz4uhhuvmy", isConstitution: true },
             { label: "GovTool", uri: "https://gov.tools/" },
             { label: "CIP-100 (Governance Metadata)", uri: "https://cips.cardano.org/cip/CIP-0100" },
             { label: "CIP-136 (CC Vote Metadata)", uri: "https://cips.cardano.org/cip/CIP-0136" },
             { label: "CIP-1694 (Governance Framework)", uri: "https://cips.cardano.org/cip/CIP-1694" },
-            // Add more common references here
         ];
 
-        // Constitution Articles (as before)
         const constitutionArticles = [
             "PREAMBLE","TENET 1","TENET 2","TENET 3","TENET 4","TENET 5","TENET 6","TENET 7","TENET 8","TENET 9","TENET 10",
-            "Article I Section 1","Article I Section 2",
-            "Article II Section 1","Article II Section 2","Article II Section 3","Article II Section 4",
+            "Article I Section 1","Article I Section 2", "Article II Section 1","Article II Section 2","Article II Section 3","Article II Section 4",
             "Article III Section 1","Article III Section 2","Article III Section 3","Article III Section 4","Article III Section 5","Article III Section 6",
             "Article IV Section 1","Article IV Section 2","Article IV Section 3","Article IV Section 4","Article IV Section 5",
             "Article V Section 1","Article V Section 2","Article V Section 3","Article V Section 4","Article V Section 5","Article V Section 6",
@@ -930,18 +935,14 @@
             "Appendix II Section 1: Framing Notes","Appendix II Section 2: Other Guidance"
         ];
 
-        // --- DOMContentLoaded Listener ---
         document.addEventListener('DOMContentLoaded', () => {
             const darkModeToggle = document.getElementById('darkModeToggle');
-
-            // Check for saved theme preference
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark-mode');
                 if (darkModeToggle) darkModeToggle.textContent = 'Switch to Light Mode';
             } else {
                  if (darkModeToggle) darkModeToggle.textContent = 'Switch to Dark Mode';
             }
-
 
             if (darkModeToggle) {
                 darkModeToggle.addEventListener('click', () => {
@@ -969,22 +970,19 @@
                 summaryTextarea.addEventListener('input', () => {
                     const count = summaryTextarea.value.length;
                     summaryCharCount.textContent = count;
-                    summaryCharCount.style.color = count > 300 ? 'red' : 'inherit';
+                    summaryCharCount.style.color = count > 300 ? 'red' : (document.body.classList.contains('dark-mode') ? 'var(--helper-text-color)' : 'inherit');
                 });
             }
             const errorDiv = document.getElementById('error-message');
             if(errorDiv) errorDiv.style.display = 'none';
         });
 
-
-        // --- Reference Library Functions (largely unchanged, ensure DOM elements exist) ---
         function populateReferenceLibraryDropdown() {
             const selectElement = document.getElementById('library-select');
             if (!selectElement) return;
             referenceLibrary.forEach((item, index) => {
                 const option = document.createElement('option');
-                option.value = index;
-                option.textContent = item.label;
+                option.value = index; option.textContent = item.label;
                 selectElement.appendChild(option);
             });
         }
@@ -992,48 +990,27 @@
         function addLibraryReference(targetType) {
             const selectElement = document.getElementById('library-select');
             const errorDiv = document.getElementById('manual-ref-error');
-            if (errorDiv) {
-                errorDiv.textContent = '';
-                errorDiv.style.display = 'none';
-            }
-
+            if (errorDiv) { errorDiv.textContent = ''; errorDiv.style.display = 'none'; }
             if (!selectElement || selectElement.value === "") {
-                if (errorDiv) {
-                    errorDiv.textContent = 'Please select a reference from the library.';
-                    errorDiv.style.display = 'block';
-                }
+                if (errorDiv) { errorDiv.textContent = 'Please select a reference from the library.'; errorDiv.style.display = 'block'; }
                 return;
             }
             const selectedIndex = parseInt(selectElement.value, 10);
             const selectedRef = referenceLibrary[selectedIndex];
-
             if (selectedRef) {
                 const newRef = { label: selectedRef.label, uri: selectedRef.uri, isConstitution: selectedRef.isConstitution || false };
                 if (targetType === 'relevant') {
                     if (!formData.manualRelevantArticles.some(ref => ref.uri === newRef.uri)) {
-                        if (newRef.isConstitution) {
-                            newRef.selectedArticles = [];
-                            showConstitutionSelector(formData.manualRelevantArticles.length);
-                        }
-                        formData.manualRelevantArticles.push(newRef);
-                        updateReferenceDisplay('relevant');
-                    } else {
-                        if (errorDiv) { errorDiv.textContent = 'This library reference is already in Relevant Articles.'; errorDiv.style.display = 'block'; }
-                    }
+                        if (newRef.isConstitution) { newRef.selectedArticles = []; showConstitutionSelector(formData.manualRelevantArticles.length); }
+                        formData.manualRelevantArticles.push(newRef); updateReferenceDisplay('relevant');
+                    } else { if (errorDiv) { errorDiv.textContent = 'This library reference is already in Relevant Articles.'; errorDiv.style.display = 'block'; }}
                 } else if (targetType === 'other') {
                     if (!formData.manualOtherReferences.some(ref => ref.uri === newRef.uri)) {
-                        formData.manualOtherReferences.push(newRef);
-                        updateReferenceDisplay('other');
-                        if (newRef.isConstitution && !formData.manualRelevantArticles.some(r => r.isConstitution)) {
-                            hideConstitutionSelector();
-                        }
-                    } else {
-                         if (errorDiv) { errorDiv.textContent = 'This library reference is already in Other References.'; errorDiv.style.display = 'block'; }
-                    }
+                        formData.manualOtherReferences.push(newRef); updateReferenceDisplay('other');
+                        if (newRef.isConstitution && !formData.manualRelevantArticles.some(r => r.isConstitution)) { hideConstitutionSelector(); }
+                    } else { if (errorDiv) { errorDiv.textContent = 'This library reference is already in Other References.'; errorDiv.style.display = 'block'; }}
                 }
-            } else {
-                 if (errorDiv) { errorDiv.textContent = 'Could not find selected library reference.'; errorDiv.style.display = 'block'; }
-            }
+            } else { if (errorDiv) { errorDiv.textContent = 'Could not find selected library reference.'; errorDiv.style.display = 'block'; }}
         }
 
         function addManualReference() {
@@ -1041,83 +1018,56 @@
             const uriInput = document.getElementById('manualRefUri');
             const targetSelect = document.getElementById('manualRefTarget');
             const errorDiv = document.getElementById('manual-ref-error');
-
-            const label = labelInput.value.trim();
-            const uri = uriInput.value.trim();
-            const targetType = targetSelect.value;
-
+            const label = labelInput.value.trim(); const uri = uriInput.value.trim(); const targetType = targetSelect.value;
             if (errorDiv) { errorDiv.textContent = ''; errorDiv.style.display = 'none'; }
-
             if (!label) { if (errorDiv) { errorDiv.textContent = 'Please enter a Reference Label.'; errorDiv.style.display = 'block';} labelInput.focus(); return; }
             if (!uri) { if (errorDiv) { errorDiv.textContent = 'Please enter a Reference URI.'; errorDiv.style.display = 'block';} uriInput.focus(); return; }
             if (!uri.includes(':') && !uri.includes('.')) { if (errorDiv) { errorDiv.textContent = 'Please enter a valid URI.'; errorDiv.style.display = 'block';} uriInput.focus(); return; }
-
             const isConstitution = (label === "Cardano Blockchain Ecosystem Constitution");
             const newRef = { label: label, uri: uri, isConstitution: isConstitution };
-
             if (targetType === 'relevant') {
                 if (!formData.manualRelevantArticles.some(ref => ref.uri === newRef.uri)) {
                     if (newRef.isConstitution) { newRef.selectedArticles = []; showConstitutionSelector(formData.manualRelevantArticles.length); }
-                    formData.manualRelevantArticles.push(newRef);
-                    updateReferenceDisplay('relevant');
+                    formData.manualRelevantArticles.push(newRef); updateReferenceDisplay('relevant');
                     labelInput.value = ''; uriInput.value = '';
-                } else {
-                    if (errorDiv) { errorDiv.textContent = 'This URI is already in Relevant Articles.'; errorDiv.style.display = 'block'; }
-                }
+                } else { if (errorDiv) { errorDiv.textContent = 'This URI is already in Relevant Articles.'; errorDiv.style.display = 'block'; }}
             } else if (targetType === 'other') {
                 if (!formData.manualOtherReferences.some(ref => ref.uri === newRef.uri)) {
-                    formData.manualOtherReferences.push(newRef);
-                    updateReferenceDisplay('other');
+                    formData.manualOtherReferences.push(newRef); updateReferenceDisplay('other');
                     if (newRef.isConstitution && !formData.manualRelevantArticles.some(r => r.isConstitution)) { hideConstitutionSelector(); }
                     labelInput.value = ''; uriInput.value = '';
-                } else {
-                    if (errorDiv) { errorDiv.textContent = 'This URI is already in Other References.'; errorDiv.style.display = 'block'; }
-                }
+                } else { if (errorDiv) { errorDiv.textContent = 'This URI is already in Other References.'; errorDiv.style.display = 'block'; }}
             }
         }
 
         function updateReferenceDisplay(targetType) {
-            let displayListElement = (targetType === 'relevant') ? document.getElementById('relevantArticlesDisplay') : document.getElementById('otherReferencesDisplay');
-            let referenceArray = (targetType === 'relevant') ? formData.manualRelevantArticles : formData.manualOtherReferences;
-
-            if (!displayListElement) return;
-            displayListElement.innerHTML = '';
-
-            if (referenceArray.length === 0) {
-                displayListElement.innerHTML = '<li>No references added yet.</li>';
-            } else {
-                referenceArray.forEach((ref, index) => {
+            let displayListEl = (targetType === 'relevant') ? document.getElementById('relevantArticlesDisplay') : document.getElementById('otherReferencesDisplay');
+            let refArray = (targetType === 'relevant') ? formData.manualRelevantArticles : formData.manualOtherReferences;
+            if (!displayListEl) return;
+            displayListEl.innerHTML = '';
+            if (refArray.length === 0) { displayListEl.innerHTML = '<li>No references added yet.</li>'; }
+            else {
+                refArray.forEach((ref, index) => {
                     const listItem = document.createElement('li');
-                    let selectedArticlesHtml = '';
+                    let selArtHtml = '';
                     if (ref.isConstitution && ref.selectedArticles && ref.selectedArticles.length > 0 && targetType === 'relevant') {
-                        selectedArticlesHtml = `<span class="selected-articles">(Selected: ${escapeHtml(ref.selectedArticles.join(', '))})</span>`;
+                        selArtHtml = `<span class="selected-articles">(Selected: ${escapeHtml(ref.selectedArticles.join(', '))})</span>`;
                     }
-                    listItem.innerHTML = `
-                        <span class="ref-display-label">${escapeHtml(ref.label)}:</span>
-                        <span class="ref-display-uri">${escapeHtml(ref.uri)}</span>
-                        ${selectedArticlesHtml}
-                        <button type="button" class="delete-ref-button" onclick="deleteReference('${targetType}', ${index})">Delete</button>
-                    `;
-                    displayListElement.appendChild(listItem);
+                    listItem.innerHTML = `<span class="ref-display-label">${escapeHtml(ref.label)}:</span> <span class="ref-display-uri">${escapeHtml(ref.uri)}</span> ${selArtHtml} <button type="button" class="delete-ref-button" onclick="deleteReference('${targetType}', ${index})">Delete</button>`;
+                    displayListEl.appendChild(listItem);
                 });
             }
         }
 
         function deleteReference(targetType, index) {
-            let referenceArray = (targetType === 'relevant') ? formData.manualRelevantArticles : formData.manualOtherReferences;
+            let refArray = (targetType === 'relevant') ? formData.manualRelevantArticles : formData.manualOtherReferences;
             let isRelevant = (targetType === 'relevant');
-
-            if (index >= 0 && index < referenceArray.length) {
-                const deletedRef = referenceArray[index];
-                referenceArray.splice(index, 1);
+            if (index >= 0 && index < refArray.length) {
+                const deletedRef = refArray[index]; refArray.splice(index, 1);
                 if (isRelevant && deletedRef.isConstitution) {
-                    const constitutionStillRelevant = formData.manualRelevantArticles.some(ref => ref.isConstitution);
-                    if (!constitutionStillRelevant) {
-                        hideConstitutionSelector();
-                    } else {
-                        const remainingConstIndex = formData.manualRelevantArticles.findIndex(ref => ref.isConstitution);
-                        if(remainingConstIndex > -1) { showConstitutionSelector(remainingConstIndex); }
-                    }
+                    const constStillRelevant = formData.manualRelevantArticles.some(ref => ref.isConstitution);
+                    if (!constStillRelevant) { hideConstitutionSelector(); }
+                    else { const remConstIdx = formData.manualRelevantArticles.findIndex(ref => ref.isConstitution); if(remConstIdx > -1) { showConstitutionSelector(remConstIdx); }}
                 }
                 updateReferenceDisplay(targetType);
             }
@@ -1133,10 +1083,8 @@
                 if (article.startsWith("//")) return;
                 const checkboxId = `const-art-${article.replace(/[\s\W]+/g, '-')}`;
                 const isChecked = currentSelections.includes(article);
-                const label = document.createElement('label');
-                label.htmlFor = checkboxId;
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox'; checkbox.id = checkboxId; checkbox.value = article; checkbox.checked = isChecked;
+                const label = document.createElement('label'); label.htmlFor = checkboxId;
+                const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = checkboxId; checkbox.value = article; checkbox.checked = isChecked;
                 checkbox.addEventListener('change', (event) => {
                     const currentConstRef = formData.manualRelevantArticles[referenceIndex];
                     if (!currentConstRef) return;
@@ -1146,8 +1094,7 @@
                         updateReferenceDisplay('relevant');
                     }
                 });
-                label.appendChild(checkbox);
-                label.appendChild(document.createTextNode(` ${article}`));
+                label.appendChild(checkbox); label.appendChild(document.createTextNode(` ${article}`));
                 checkboxesContainer.appendChild(label);
             });
             selectorDiv.style.display = 'block';
@@ -1160,30 +1107,21 @@
             if (checkboxesContainer) checkboxesContainer.innerHTML = '';
         }
 
-        function updateConstitutionSelections(referenceIndexInFormData, articleValue, isChecked) {
-            if (formData.manualRelevantArticles[referenceIndexInFormData]?.isConstitution) {
-                if (!formData.manualRelevantArticles[referenceIndexInFormData].selectedArticles) {
-                    formData.manualRelevantArticles[referenceIndexInFormData].selectedArticles = [];
-                }
-                const selections = formData.manualRelevantArticles[referenceIndexInFormData].selectedArticles;
-                if (isChecked && !selections.includes(articleValue)) { selections.push(articleValue); }
-                else if (!isChecked) {
-                    const indexToRemove = selections.indexOf(articleValue);
-                    if (indexToRemove > -1) { selections.splice(indexToRemove, 1); }
-                }
-                selections.sort((a, b) => {
-                    const mainList = constitutionArticles.filter(item => !item.startsWith("//"));
-                    return mainList.indexOf(a) - mainList.indexOf(b);
-                });
+        function updateConstitutionSelections(refIdxInFormData, articleVal, isChecked) {
+            if (formData.manualRelevantArticles[refIdxInFormData]?.isConstitution) {
+                if (!formData.manualRelevantArticles[refIdxInFormData].selectedArticles) { formData.manualRelevantArticles[refIdxInFormData].selectedArticles = []; }
+                const selections = formData.manualRelevantArticles[refIdxInFormData].selectedArticles;
+                if (isChecked && !selections.includes(articleVal)) { selections.push(articleVal); }
+                else if (!isChecked) { const idxToRemove = selections.indexOf(articleVal); if (idxToRemove > -1) { selections.splice(idxToRemove, 1); }}
+                selections.sort((a, b) => { const mainList = constitutionArticles.filter(item => !item.startsWith("//")); return mainList.indexOf(a) - mainList.indexOf(b); });
             }
         }
 
-        // --- Step Navigation and Validation Functions ---
         function updateStepStatusDisplay(stepNumber) {
-            const statusElement = document.getElementById(`status-step-${stepNumber}`);
-            if (statusElement) {
-                if (stepValidity[stepNumber]) { statusElement.textContent = '✓'; statusElement.classList.add('valid'); }
-                else { statusElement.textContent = ''; statusElement.classList.remove('valid'); }
+            const statusEl = document.getElementById(`status-step-${stepNumber}`);
+            if (statusEl) {
+                if (stepValidity[stepNumber]) { statusEl.textContent = '✓'; statusEl.classList.add('valid'); }
+                else { statusEl.textContent = ''; statusEl.classList.remove('valid'); }
             }
         }
 
@@ -1191,11 +1129,11 @@
             document.querySelectorAll('.step').forEach(step => step.style.display = 'none');
             const stepToShow = document.getElementById(`step-${stepNumber}`);
             if (stepToShow) {
-                stepToShow.style.display = 'block';
-                updateStepStatusDisplay(stepNumber);
+                stepToShow.style.display = 'block'; updateStepStatusDisplay(stepNumber);
                 if (stepNumber === totalSteps) {
                     populateReviewArea();
                     const genBtn = document.getElementById('generate-button'); if(genBtn) genBtn.disabled = true;
+                    const genMdBtn = document.getElementById('generate-markdown-button'); if(genMdBtn) genMdBtn.disabled = true; // Disable MD button
                     const verStatus = document.getElementById('verification-status'); if(verStatus) {verStatus.textContent = ''; verStatus.className = '';}
                     const errMsg = document.getElementById('error-message'); if(errMsg) {errMsg.textContent = ''; errMsg.style.display = 'none';}
                 }
@@ -1204,17 +1142,16 @@
         }
 
         function validateStep(stepNumber, showAlerts = true) {
-            const stepElement = document.getElementById(`step-${stepNumber}`);
-            if (!stepElement) return false;
-            const requiredInputs = stepElement.querySelectorAll('input[required], textarea[required]');
-            let isValid = true; let firstErrorMessage = '';
-            requiredInputs.forEach(input => {
+            const stepEl = document.getElementById(`step-${stepNumber}`);
+            if (!stepEl) return false;
+            const reqInputs = stepEl.querySelectorAll('input[required], textarea[required]');
+            let isValid = true; let firstErrMessage = '';
+            reqInputs.forEach(input => {
                 if (isValid && !input.value.trim()) {
                     const fieldLabel = input.previousElementSibling?.textContent || input.id;
                     const fieldName = input.id === 'hashAlgorithm' ? 'Hash Algorithm' : fieldLabel.replace(':', '').trim();
-                    firstErrorMessage = `Please fill in the required field: ${fieldName}`;
-                    // Conditional alert only in browser environment
-                    if (showAlerts && typeof window !== 'undefined' && typeof window.alert === 'function') alert(firstErrorMessage);
+                    firstErrMessage = `Please fill in the required field: ${fieldName}`;
+                    if (showAlerts && typeof window !== 'undefined' && typeof window.alert === 'function') alert(firstErrMessage);
                     input.focus(); isValid = false;
                 }
             });
@@ -1222,17 +1159,17 @@
             if (stepNumber === 2) {
                 const summary = document.getElementById('summary').value;
                 if (summary.length > 300) {
-                    firstErrorMessage = 'Summary must not exceed 300 characters.';
-                    if (showAlerts && typeof window !== 'undefined' && typeof window.alert === 'function') alert(firstErrorMessage);
+                    firstErrMessage = 'Summary must not exceed 300 characters.';
+                    if (showAlerts && typeof window !== 'undefined' && typeof window.alert === 'function') alert(firstErrMessage);
                     document.getElementById('summary').focus(); isValid = false;
                 }
             } else if (stepNumber === 4) {
-                const numberInputs = stepElement.querySelectorAll('input[type="number"]');
-                numberInputs.forEach(input => {
+                const numInputs = stepEl.querySelectorAll('input[type="number"]');
+                numInputs.forEach(input => {
                     if (isValid && input.value && parseInt(input.value, 10) < 0) {
                         const fieldLabel = input.previousElementSibling?.textContent || input.id;
-                        firstErrorMessage = `Internal vote count for ${fieldLabel.replace(':', '').trim()} cannot be negative.`;
-                        if (showAlerts && typeof window !== 'undefined' && typeof window.alert === 'function') alert(firstErrorMessage);
+                        firstErrMessage = `Internal vote count for ${fieldLabel.replace(':', '').trim()} cannot be negative.`;
+                        if (showAlerts && typeof window !== 'undefined' && typeof window.alert === 'function') alert(firstErrMessage);
                         input.focus(); isValid = false;
                     }
                 });
@@ -1241,75 +1178,59 @@
         }
 
         function runFinalValidation() {
-            const requiredSteps = [1, 2]; let overallValid = true;
-            let finalMessage = "Verification successful. Ready to generate JSON.";
-            for (const stepNum of requiredSteps) {
+            const reqSteps = [1, 2]; let overallValid = true;
+            let finalMsg = "Verification successful. Ready to generate JSON and Markdown.";
+            for (const stepNum of reqSteps) {
                 if (!validateStep(stepNum, false)) {
                     overallValid = false;
-                    const stepElement = document.getElementById(`step-${stepNum}`);
+                    const stepEl = document.getElementById(`step-${stepNum}`);
                     let firstInvalidInput = null;
-                    if (stepElement) {
-                        const reqInputs = stepElement.querySelectorAll('input[required], textarea[required]');
-                        for(const input of reqInputs) { if(!input.value.trim()) { firstInvalidInput = input; break; } }
-                    }
+                    if (stepEl) { const reqIns = stepEl.querySelectorAll('input[required], textarea[required]'); for(const input of reqIns) { if(!input.value.trim()) { firstInvalidInput = input; break; } }}
                     const fieldLabel = firstInvalidInput?.previousElementSibling?.textContent || `a required field in Step ${stepNum}`;
                     const fieldName = firstInvalidInput?.id === 'hashAlgorithm' ? 'Hash Algorithm' : fieldLabel.replace(':', '').trim();
-                    finalMessage = `Verification failed: Please check ${fieldName}.`;
+                    finalMsg = `Verification failed: Please check ${fieldName}.`;
                     showStep(stepNum); break;
                 }
             }
             if (overallValid) {
                 const summary = document.getElementById('summary').value;
-                if (summary.length > 300) { overallValid = false; finalMessage = 'Verification failed: Summary exceeds 300 characters.'; showStep(2); }
-                const step4Element = document.getElementById('step-4');
-                if (step4Element) {
-                    const numberInputs = step4Element.querySelectorAll('input[type="number"]');
-                    numberInputs.forEach(input => {
+                if (summary.length > 300) { overallValid = false; finalMsg = 'Verification failed: Summary exceeds 300 characters.'; showStep(2); }
+                const step4El = document.getElementById('step-4');
+                if (step4El) {
+                    const numIns = step4El.querySelectorAll('input[type="number"]');
+                    numIns.forEach(input => {
                         if (overallValid && input.value && parseInt(input.value, 10) < 0) {
                             overallValid = false; const fieldLabel = input.previousElementSibling?.textContent || input.id;
-                            finalMessage = `Verification failed: Internal vote count for ${fieldLabel.replace(':', '').trim()} cannot be negative.`; showStep(4);
+                            finalMsg = `Verification failed: Internal vote count for ${fieldLabel.replace(':', '').trim()} cannot be negative.`; showStep(4);
                         }
                     });
                 }
             }
-            return { isValid: overallValid, message: finalMessage };
+            return { isValid: overallValid, message: finalMsg };
         }
 
         function collectStepData(stepNumber) {
-            const stepElement = document.getElementById(`step-${stepNumber}`);
-            if (!stepElement) return;
-            const inputs = stepElement.querySelectorAll('input, textarea, select');
+            const stepEl = document.getElementById(`step-${stepNumber}`);
+            if (!stepEl) return;
+            const inputs = stepEl.querySelectorAll('input, textarea, select');
             inputs.forEach(input => {
                 if (input.id !== 'manualRefLabel' && input.id !== 'manualRefUri' && input.id !== 'manualRefTarget' && input.id !== 'library-select' && !input.id.startsWith('const-art-')) {
                     formData[input.id] = input.value.trim();
                 }
             });
             if (stepNumber === 4) {
-                const numberIds = ['internal_constitutional_votes', 'internal_unconstitutional_votes', 'internal_abstain_votes', 'internal_did_not_vote', 'internal_against_vote'];
-                numberIds.forEach(id => {
+                const numIds = ['internal_constitutional_votes', 'internal_unconstitutional_votes', 'internal_abstain_votes', 'internal_did_not_vote', 'internal_against_vote'];
+                numIds.forEach(id => {
                     const input = document.getElementById(id);
-                    if (input && input.value.trim() !== '') {
-                        const value = parseInt(input.value, 10);
-                        formData[id] = (!isNaN(value) && value >= 0) ? value : null;
-                    } else { formData[id] = null; }
+                    if (input && input.value.trim() !== '') { const val = parseInt(input.value, 10); formData[id] = (!isNaN(val) && val >= 0) ? val : null; }
+                    else { formData[id] = null; }
                 });
             }
         }
 
-        function nextStep() {
-            const isValid = validateStep(currentStep);
-            updateStepStatusDisplay(currentStep);
-            if (isValid) { collectStepData(currentStep); if (currentStep < totalSteps) { showStep(currentStep + 1); } }
-        }
-
-        function prevStep() {
-            collectStepData(currentStep); if (currentStep > 1) { showStep(currentStep - 1); }
-        }
-
-        function parseAuthors(authorsString) {
-            if (!authorsString) return [];
-            return authorsString.split(/[\n;]+/).map(a => a.trim()).filter(a => a).map(name => ({ name: name }));
-        }
+        function nextStep() { const isValid = validateStep(currentStep); updateStepStatusDisplay(currentStep); if (isValid) { collectStepData(currentStep); if (currentStep < totalSteps) { showStep(currentStep + 1); }}}
+        function prevStep() { collectStepData(currentStep); if (currentStep > 1) { showStep(currentStep - 1); }}
+        function parseAuthors(authorsString) { if (!authorsString) return []; return authorsString.split(/[\n;]+/).map(a => a.trim()).filter(a => a).map(name => ({ name: name }));}
 
         function buildMetadata() {
             const context = { /* ... as before ... */
@@ -1329,7 +1250,7 @@
             if (formData.internal_did_not_vote !== null && formData.internal_did_not_vote !== undefined) internalVoteData.didNotVote = formData.internal_did_not_vote;
             if (Object.keys(internalVoteData).length > 0) body.internalVote = internalVoteData;
             const allReferences = [];
-            const processReference = (ref) => { const referenceObject = { "@type": "Other", label: ref.label, uri: ref.uri }; if (ref.isConstitution && ref.selectedArticles && ref.selectedArticles.length > 0) { referenceObject.RelevantArticles = ref.selectedArticles.join(', '); } allReferences.push(referenceObject); };
+            const processReference = (ref) => { const refObj = { "@type": "Other", label: ref.label, uri: ref.uri }; if (ref.isConstitution && ref.selectedArticles && ref.selectedArticles.length > 0) { refObj.RelevantArticles = ref.selectedArticles.join(', '); } allReferences.push(refObj); };
             (formData.manualRelevantArticles || []).forEach(processReference);
             (formData.manualOtherReferences || []).forEach(processReference);
             if (allReferences.length > 0) { body.references = allReferences; }
@@ -1337,8 +1258,7 @@
         }
 
         function populateReviewArea() {
-            const reviewArea = document.getElementById('review-area');
-            if (!reviewArea) return;
+            const reviewArea = document.getElementById('review-area'); if (!reviewArea) return;
             let reviewHtml = '';
             if (formData.hashAlgorithm || formData.subject || formData.authors) {
                 reviewHtml += `<div class="review-section"><h3>Basic Information</h3>`;
@@ -1364,7 +1284,6 @@
             if (formData.conclusion) optDiscHtml += `<p><span class="review-label">Conclusion:</span></p><pre class="review-value review-block">${escapeHtml(formData.conclusion)}</pre>`;
             if (optDiscHtml) reviewHtml += `<div class="review-section"><h3>Supporting Discussion</h3>${optDiscHtml}</div>`;
             else reviewHtml += `<div class="review-section"><h3>Supporting Discussion</h3><p><span class="review-value"><em>No optional discussion provided.</em></span></p></div>`;
-
             const intVotesProvided = [formData.internal_constitutional_votes, formData.internal_unconstitutional_votes, formData.internal_abstain_votes, formData.internal_did_not_vote, formData.internal_against_vote].some(v => v !== null && v !== undefined && v !== '');
             if (intVotesProvided) {
                 reviewHtml += `<div class="review-section"><h3>Internal Votes</h3><ul class="review-list">`;
@@ -1375,7 +1294,6 @@
                 if (formData.internal_against_vote !== null && formData.internal_against_vote !== undefined) reviewHtml += `<li><span class="review-label">Votes Against Voting (Not in JSON):</span> ${formData.internal_against_vote}</li>`;
                 reviewHtml += `</ul></div>`;
             } else { reviewHtml += `<div class="review-section"><h3>Internal Votes</h3><p><span class="review-value"><em>No internal votes provided.</em></span></p></div>`; }
-
             const allAddedRefs = [...(formData.manualRelevantArticles || []), ...(formData.manualOtherReferences || [])];
             if (allAddedRefs.length > 0) {
                 reviewHtml += `<div class="review-section"><h3>References</h3><ul class="review-list review-references">`;
@@ -1397,9 +1315,11 @@
         function verifyMetadata() {
             const verStatus = document.getElementById('verification-status');
             const genBtn = document.getElementById('generate-button');
+            const genMdBtn = document.getElementById('generate-markdown-button'); // Get MD button
             const { isValid, message } = runFinalValidation();
             if (verStatus) { verStatus.textContent = message; verStatus.className = isValid ? 'success' : 'failure'; }
             if (genBtn) { genBtn.disabled = !isValid; }
+            if (genMdBtn) { genMdBtn.disabled = !isValid; } // Enable/disable MD button
         }
 
         function generateJson() {
@@ -1424,6 +1344,105 @@
                 if (errMsgDiv) { errMsgDiv.textContent = `Error generating JSON: ${error.message}`; errMsgDiv.style.display = 'block'; }
             }
         }
+
+        // New function to generate Markdown content
+        function generateMarkdownContent(metadata) {
+            let md = "";
+
+            // Helper to safely get values, defaulting to "Not provided" or empty for lists
+            const getVal = (path, defaultValue = "Not provided") => {
+                let current = metadata;
+                for (const key of path.split('.')) {
+                    if (current && typeof current === 'object' && key in current) {
+                        current = current[key];
+                    } else {
+                        return defaultValue;
+                    }
+                }
+                return (current === null || current === undefined || current === "") ? defaultValue : current;
+            };
+            const getValEmpty = (path) => getVal(path, ""); // For fields that should be empty if not present
+
+            md += `# Summary\n\n${getVal('body.summary', 'No summary provided.')}\n\n`;
+            md += `# Rationale Statement\n\n${getVal('body.rationaleStatement', 'No rationale statement provided.')}\n\n`;
+            md += `# Precedent Discussion\n\n${getVal('body.precedentDiscussion', 'No precedent discussion provided.')}\n\n`;
+            md += `# Counterargument Discussion\n\n${getVal('body.counterargumentDiscussion', 'No counterargument discussion provided.')}\n\n`;
+            md += `# Conclusion\n\n${getVal('body.conclusion', 'No conclusion provided.')}\n\n`;
+
+            md += `# Internal Vote\n\n`;
+            md += `- Constitutional: ${getVal('body.internalVote.constitutional', 'N/A')}\n`;
+            md += `- Unconstitutional: ${getVal('body.internalVote.unconstitutional', 'N/A')}\n`;
+            md += `- Abstain: ${getVal('body.internalVote.abstain', 'N/A')}\n`;
+            md += `- Did Not Vote: ${getVal('body.internalVote.didNotVote', 'N/A')}\n\n`;
+
+            md += `# References\n\n`;
+            const references = (metadata.body && Array.isArray(metadata.body.references)) ? metadata.body.references : [];
+            if (references.length > 0) {
+                references.forEach(ref => {
+                    const label = ref.label || 'No Label';
+                    const uri = ref.uri || '#';
+                    md += `- [${label}](${uri})\n`;
+                     // Add RelevantArticles if present (as per CIP-136 context, though your shell script didn't explicitly show this sub-formatting)
+                    if (ref.RelevantArticles) {
+                        md += `  - Relevant Articles/Sections: ${ref.RelevantArticles}\n`;
+                    }
+                });
+            } else {
+                md += "No references provided.\n";
+            }
+            md += "\n";
+
+            md += `# Authors\n\n`;
+            const authors = (metadata.authors && Array.isArray(metadata.authors)) ? metadata.authors : [];
+            if (authors.length > 0) {
+                authors.forEach(author => {
+                    // The shell script used .did, but current JSON only has .name
+                    md += `- ${author.name || 'Unnamed Author'}\n`;
+                });
+            } else {
+                md += "No authors listed.\n";
+            }
+            return md.trim();
+        }
+
+        // New function to trigger Markdown file download
+        function generateMarkdownFile() {
+            const errorMessageDiv = document.getElementById('error-message');
+            if (errorMessageDiv) { errorMessageDiv.textContent = ''; errorMessageDiv.style.display = 'none'; }
+
+            const genMdBtn = document.getElementById('generate-markdown-button');
+            if (genMdBtn && genMdBtn.disabled) {
+                if (errorMessageDiv) { errorMessageDiv.textContent = 'Please verify the metadata successfully before generating.'; errorMessageDiv.style.display = 'block'; }
+                return;
+            }
+
+            try {
+                const metadataObject = buildMetadata();
+                const markdownString = generateMarkdownContent(metadataObject);
+                const blob = new Blob([markdownString], { type: 'text/markdown;charset=utf-8' });
+                const link = document.createElement('a');
+
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const formattedDate = `${year}-${month}-${day}`;
+                const subjectText = formData.subject ? formData.subject.trim() : "Untitled";
+                const safeSubject = subjectText.replace(/[<>:"/\\|?*]+/g, '_');
+
+                link.download = `${formattedDate} - ${safeSubject}.md`;
+                link.href = URL.createObjectURL(blob);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+
+            } catch (error) {
+                console.error("Error generating Markdown:", error);
+                if (errorMessageDiv) { errorMessageDiv.textContent = `Error generating Markdown: ${error.message}`; errorMessageDiv.style.display = 'block'; }
+            }
+        }
+
     </script>
 </body>
 </html>
